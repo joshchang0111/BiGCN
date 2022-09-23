@@ -1,7 +1,8 @@
 import os
-import numpy as np
+import ipdb
 import torch
 import random
+import numpy as np
 from torch.utils.data import Dataset
 from torch_geometric.data import Data
 
@@ -78,6 +79,7 @@ class BiGraphDataset(Dataset):
             bunew_edgeindex = [row, col]
         else:
             bunew_edgeindex = [burow,bucol]
+
         return Data(x=torch.tensor(data['x'],dtype=torch.float32),
                     edge_index=torch.LongTensor(new_edgeindex),BU_edge_index=torch.LongTensor(bunew_edgeindex),
              y=torch.LongTensor([int(data['y'])]), root=torch.LongTensor(data['root']),
