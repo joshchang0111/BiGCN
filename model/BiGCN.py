@@ -217,7 +217,7 @@ def train_GCN(args, treeDic, x_test, x_train, TDdroprate, BUdroprate, lr, weight
 			F3 = early_stopping.F3
 			F4 = early_stopping.F4
 			break
-		break
+			
 	return train_losses, val_losses, train_accs, val_accs, accs, F1, F2, F3, F4
 
 def parse_args():
@@ -232,7 +232,7 @@ def parse_args():
 	parser.add_argument("--patience", type=int, default=10)
 	parser.add_argument("--n_epochs", type=int, default=200)
 	parser.add_argument("--batch_size", type=int, default=128)
-	parser.add_argument("--iterations", type=int, default=1)
+	parser.add_argument("--iterations", type=int, default=10)
 	parser.add_argument("--TDdroprate", type=float, default=0.2)
 	parser.add_argument("--BUdroprate", type=float, default=0.2)
 	parser.add_argument("--model", type=str, default="GCN")
