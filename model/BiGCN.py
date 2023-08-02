@@ -101,9 +101,9 @@ class Net(th.nn.Module):
 
 def train_GCN(args, treeDic, x_test, x_train, TDdroprate, BUdroprate, lr, weight_decay, patience, n_epochs, batchsize, dataname, iter):
 	model = Net(args, 5000, 64, 64).to(device)
-	BU_params=list(map(id,model.BUrumorGCN.conv1.parameters()))
+	BU_params = list(map(id,model.BUrumorGCN.conv1.parameters()))
 	BU_params += list(map(id, model.BUrumorGCN.conv2.parameters()))
-	base_params=filter(lambda p:id(p) not in BU_params,model.parameters())
+	base_params = filter(lambda p:id(p) not in BU_params,model.parameters())
 	optimizer = th.optim.Adam([
 		{'params':base_params},
 		{'params':model.BUrumorGCN.conv1.parameters(),'lr':lr/5},
@@ -225,6 +225,7 @@ def parse_args():
 
 	## Settings
 	parser.add_argument("--flatten", action="store_true")
+	parser.add_argument("--evaluate_only", action="store_true")
 
 	## Others
 	parser.add_argument("--lr", type=float, default=0.0005)
@@ -249,7 +250,13 @@ def parse_args():
 
 if __name__ == "__main__":
 	args = parse_args()
-	device = th.device('cuda:0' if th.cuda.is_available() else 'cpu')
+	device = th.device("cuda:0" if th.cuda.is_available() else "cpu")
+
+	if not os.path.isfile("{}/result.tsv".format(args.output_root)):
+		with open("{}/result.tsv".format(args.output_root), "w") as fw:
+			fw.write("{:15s}\t{:5s}\t{:5s}\t{:10s}\t{:10s}\t{:10s}\t{:10s}\t{:10s}\t{:10s}\n".format(
+				"Dataset", "Iter", "Fold", "Accuracy", "F1-Macro", "F1-NR", "F1-FR", "F1-TR", "F1-UR")
+			)
 
 	treeDic = loadTree(args, args.dataset_name)
 
@@ -263,7 +270,7 @@ if __name__ == "__main__":
 
 			## Load fixed 5-fold
 			fold_test, fold_train = loadfoldlist(args, args.dataset_name, fold_idx)
-
+			
 			train_losses, val_losses, train_accs, val_accs0, acc, F1, F2, F3, F4 = \
 			train_GCN(
 				args, treeDic, fold_test, fold_train, 
@@ -277,6 +284,11 @@ if __name__ == "__main__":
 			TR_F1.append(F2)
 			UR_F1.append(F3)
 			NR_F1.append(F4)
+
+			with open("{}/result.tsv".format(args.output_root), "a") as fw:
+				fw.write("{:15s}\t{:5d}\t{:5d}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\n".format(
+					args.dataset_name, iter, fold_idx, acc, (F1 + F2 + F3 + F4) / 4, F4, F1, F2, F3)
+				)
 
 		## Record average result of 5-fold for current iteration
 		total_accs.append(np.mean(accs))
@@ -296,14 +308,10 @@ if __name__ == "__main__":
 	###########################
 	## NEW: Log Final Result ##
 	###########################
-	if not os.path.isfile("{}/result.tsv".format(args.output_root)):
-		with open("{}/result.tsv".format(args.output_root), "w") as fw:
-			fw.write("{:15s}\t{:10s}\t{:10s}\t{:10s}\t{:10s}\t{:10s}\t{:10s}\n".format(
-				"Dataset", "Accuracy", "F1-Macro", "F1-NR", "F1-FR", "F1-TR", "F1-UR"))
-
 	with open("{}/result.tsv".format(args.output_root), "a") as fw:
-		fw.write("{:15s}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\n".format(
-				args.dataset_name, sum(total_accs) / args.iterations, 
+		fw.write("{:15s}\t{:5s}\t{:5s}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\t{:<10.4f}\n".format(
+				args.dataset_name, "-", "Avg.", 
+				sum(total_accs) / args.iterations, 
 				(sum(total_NR_F1) + sum(total_FR_F1) + sum(total_TR_F1) + sum(total_UR_F1)) / (args.n_classes * args.iterations), 
 				sum(total_NR_F1) / args.iterations, 
 				sum(total_FR_F1) / args.iterations, 
